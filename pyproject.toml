@@ -1,0 +1,15 @@
+[project]
+name = "erax-wow-turbo-mw"
+description = "Super fast multilingual speech recognition model based on Whisper Large-v3 Turbo. A node for ComfyUI."
+version = "1.0.0"
+license = {file = "LICENSE"}
+dependencies = []
+
+[project.urls]
+Repository = "https://github.com/billwuhao/ComfyUI_EraX-WoW-Turbo"
+#  Used by Comfy Registry https://comfyregistry.org
+
+[tool.comfy]
+PublisherId = "mw"
+DisplayName = "MW-ComfyUI_EraX-WoW-Turbo"
+Icon = ""
