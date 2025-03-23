@@ -4,6 +4,20 @@
 
 ![](https://github.com/billwuhao/ComfyUI_EraX-WoW-Turbo/blob/main/images/2025-03-23_06-38-22.png)
 
+Based `on Whisper Large-v3 Turbo` training, special training was conducted on the following eight languages:
+
+- Vietnamese
+- Hindi
+- Chinese
+- English
+- Russian
+- German
+- Ukrainian
+- Japanese
+- French
+- Dutch
+- Korean
+
 ## 📣 Updates
 
 [2025-03-23]⚒️: Released version v1.0.0.
