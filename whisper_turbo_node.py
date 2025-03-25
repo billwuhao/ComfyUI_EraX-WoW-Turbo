@@ -16,6 +16,7 @@ class WhisperTurboRun:
         return {
             "required": {
                 "audio": ("AUDIO",),
+                "max_num_words_per_page": ("INT", {"default": 24, "min": 1, "max": 50}),
                 # "sample_len": ("INT", {"default": 300, "min": 1, "step": 1}),
                 "logprob_threshold": ("FLOAT", {"default": -0.10, "min": -2.0, "max": -0.01, "step": 0.01}),
                 "no_speech_threshold": ("FLOAT", {"default": 0.03, "min": 0.0, "max": 1.0, "step": 0.01}),
@@ -33,32 +34,48 @@ class WhisperTurboRun:
     FUNCTION = "process_audio"
     CATEGORY = "🎤MW/MW-EraXWoW"
 
-    def split_into_sentences(self, segments):
+    def split_into_sentences(self, segments, max_num_words_per_page):
         sentences = []
         current_sentence =  {"timestamp": None, "text": ""}
         
+        num_words = 0
         for segment in segments:
             for word in segment["words"]:
                 if current_sentence["timestamp"] is None:
                     current_sentence["timestamp"] = []
                     current_sentence["timestamp"].append(round(word["start"], 2))
                 current_sentence["text"] += word["word"]
-                
+
+                num_words += 1
                 # 如果遇到句号或问号，结束当前句子
                 if word["word"].endswith(("。", "，", "、", "：", "；", "？", "！", 
                                           "”", "’", "）", "——", "……", "》", ".", 
                                           ",", ";", ":", "?", "!", ")", "--", "…")):
+                    num_words = 0
                     current_sentence["timestamp"].append(round(word["end"], 2))
+                    current_sentence["text"] = current_sentence["text"].strip()
+                    sentences.append(current_sentence)
+                    current_sentence = {"timestamp": None, "text": ""}
+
+                elif num_words > max_num_words_per_page:
+                    num_words = 0
+                    current_sentence["timestamp"].append(round(word["end"], 2))
+                    current_sentence["text"] = current_sentence["text"].strip()
                     sentences.append(current_sentence)
                     current_sentence = {"timestamp": None, "text": ""}
         
         # 处理未结束的句子
         if current_sentence["text"]:
+            current_sentence["timestamp"].append(round(word["end"], 2))
+            current_sentence["text"] = current_sentence["text"].strip()
             sentences.append(current_sentence)
         
         return sentences
+
+
     def process_audio(self, audio, 
                     #   sample_len = 300,
+                      max_num_words_per_page = 24,
                       logprob_threshold = -1.0, 
                       no_speech_threshold = 0.1,
                       word_timestamps = False,
@@ -124,5 +141,5 @@ class WhisperTurboRun:
                     })
                 return (str(timestamped_segments),)
             else:
-                return (str(self.split_into_sentences(result["segments"])),)
+                return (str(self.split_into_sentences(result["segments"], max_num_words_per_page)),)
 
