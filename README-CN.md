@@ -20,6 +20,10 @@
 
 ## 📣 更新
 
+[2025-03-25]⚒️: 新增 `Whisper Large-v3 Turbo` 模型，可识别语音, 生成带时间戳的文本。
+
+![](https://github.com/billwuhao/ComfyUI_EraX-WoW-Turbo/blob/main/images/2025-03-25_17-53-56.png)
+
 [2025-03-23]⚒️: 发布版本 v1.0.0. 
 
 ## 安装
@@ -32,7 +36,9 @@ git clone https://github.com/billwuhao/ComfyUI_EraX-WoW-Turbo.git
 ## 模型下载
 
 - [EraX-WoW-Turbo-V1.0](https://huggingface.co/erax-ai/EraX-WoW-Turbo-V1.0): 下载放到 `ComfyUI/models/TTS` 目录下.
+- [whisper-large-v3-turbo](https://openaipublic.azureedge.net/main/whisper/models/aff26ae408abcba5fbf8813c21e62b0941638c5f6eebfb145be0c9839262a19a/large-v3-turbo.pt): 下载放到 `ComfyUI/models/TTS/whisper-large-v3-turbo` 目录下.
 
 ## 鸣谢
 
 [EraX Team](https://huggingface.co/erax-ai/EraX-WoW-Turbo-V1.0)
+[Whisper](https://github.com/openai/whisper)

@@ -5,10 +5,6 @@ import folder_paths
 import os
 
 
-
-models_dir = folder_paths.models_dir
-model_id = os.path.join(models_dir, "TTS", "EraX-WoW-Turbo-V1.0")
-
 LANGUAGES = {
     'vietnamese': 'vi',
     'english': 'en',
@@ -24,6 +20,9 @@ LANGUAGES = {
 }
 
 class EraXWoWRUN:
+    models_dir = folder_paths.models_dir
+    model_id = os.path.join(models_dir, "TTS", "EraX-WoW-Turbo-V1.0")
+
     processor = None
     model_cache = None
     device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -42,11 +41,11 @@ class EraXWoWRUN:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("text",)
     FUNCTION = "transcribe"
-    CATEGORY = "MW/MW-EraXWoW"
+    CATEGORY = "🎤MW/MW-EraXWoW"
     def transcribe(self, audio, language, num_beams, max_length, unload_model):
         if self.model_cache is None:
-            processor = WhisperProcessor.from_pretrained(model_id)
-            model = WhisperForConditionalGeneration.from_pretrained(model_id)
+            processor = WhisperProcessor.from_pretrained(self.model_id)
+            model = WhisperForConditionalGeneration.from_pretrained(self.model_id)
             model.to(self.device)
             model.eval()
             self.processor = processor
@@ -60,7 +59,6 @@ class EraXWoWRUN:
         waveform = waveform.to(self.device)
                 
         if sample_rate != 16000:
-            print(f"Resampling audio from {sample_rate} Hz to 16000 Hz...")
             resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000).to(self.device)
             waveform = resampler(waveform)
                 
@@ -69,7 +67,7 @@ class EraXWoWRUN:
 
         inputs = processor(waveform.cpu().numpy(), sampling_rate=16000, return_tensors="pt")
         input_features = inputs.input_features.to(self.device)
-        
+
         processor.feature_extractor.language = LANGUAGES[language]
         processor.feature_extractor.task = "transcribe"
         forced_decoder_ids = processor.get_decoder_prompt_ids(language=LANGUAGES[language], task="transcribe")
@@ -80,12 +78,15 @@ class EraXWoWRUN:
                 max_length=max_length,
                 num_beams=num_beams,
                 forced_decoder_ids=forced_decoder_ids,
-                return_dict_in_generate=True
+                return_dict_in_generate=True,
             ).sequences
-        transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+
+        transcription = processor.batch_decode(generated_ids, skip_special_tokens=True)
         
         if unload_model:
             import gc
+            del model
+            del processor
             self.processor = None
             self.model_cache = None
             gc.collect()
@@ -94,10 +95,15 @@ class EraXWoWRUN:
         return (transcription,)
 
 
+
+from .whisper_turbo_node import WhisperTurboRun
+
 NODE_CLASS_MAPPINGS = {
     "EraXWoWRUN": EraXWoWRUN,
+    "WhisperTurboRun": WhisperTurboRun
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "EraXWoWRUN": "EraX WoW RUN",
+    "EraXWoWRUN": "EraX WoW Run",
+    "WhisperTurboRun": "Whisper Turbo Run"
 }
