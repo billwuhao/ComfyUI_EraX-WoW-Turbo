@@ -21,7 +21,7 @@ class WhisperTurboRun:
                 "logprob_threshold": ("FLOAT", {"default": -0.10, "min": -2.0, "max": -0.01, "step": 0.01}),
                 "no_speech_threshold": ("FLOAT", {"default": 0.03, "min": 0.0, "max": 1.0, "step": 0.01}),
                 # "task": (["transcribe", "translate"], {"default": "transcribe", "tooltip": "translate: → English."}), 
-                # "initial_prompt": ("STRING", {"default": "", "multiline": True}),
+                "initial_prompt": ("STRING", {"default": "如果有中文, 严格使用简体中文:", "multiline": True}),
                 "timestamp": ("BOOLEAN", {"default": False}),
                 "word_timestamps": ("BOOLEAN", {"default": False}),
                 # "hallucination_silence_threshold": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 3.0, "step": 0.01}),
@@ -81,7 +81,7 @@ class WhisperTurboRun:
                       word_timestamps = False,
                     #   hallucination_silence_threshold = 0.1,
                     #   task, 
-                    #   initial_prompt="", 
+                      initial_prompt="", 
                       unload_model=False, 
                       timestamp=False
                       ):
@@ -112,7 +112,7 @@ class WhisperTurboRun:
                                 # hallucination_silence_threshold = hallucination_silence_threshold,
                                 logprob_threshold = logprob_threshold,
                                 no_speech_threshold = no_speech_threshold,
-                                # initial_prompt=initial_prompt, 
+                                initial_prompt=initial_prompt, 
                                 word_timestamps = word_timestamps,
                                 # task=task, 
                                 fp16=False if self.device == "cpu" else True
