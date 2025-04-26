@@ -5,12 +5,13 @@ import folder_paths
 import whisper
 
 
-class WhisperTurboRun:
-    models_dir = folder_paths.models_dir
-    whisper_model_id = os.path.join(models_dir, "TTS", "whisper-large-v3-turbo")
+models_dir = folder_paths.models_dir
+whisper_model_id = os.path.join(models_dir, "TTS", "whisper-large-v3-turbo")
 
-    model_cache = None
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+class WhisperTurboRun:
+    def __init__(self):
+        self.model_cache = None
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -25,7 +26,7 @@ class WhisperTurboRun:
                 "timestamp": ("BOOLEAN", {"default": False}),
                 "word_timestamps": ("BOOLEAN", {"default": False}),
                 # "hallucination_silence_threshold": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 3.0, "step": 0.01}),
-                "unload_model": ("BOOLEAN", {"default": False}),
+                "unload_model": ("BOOLEAN", {"default": True}),
             }
         }
 
@@ -72,7 +73,6 @@ class WhisperTurboRun:
         
         return sentences
 
-
     def process_audio(self, audio, 
                     #   sample_len = 300,
                       max_num_words_per_page = 24,
@@ -85,11 +85,9 @@ class WhisperTurboRun:
                       unload_model=False, 
                       timestamp=False
                       ):
+        
         if self.model_cache is None:
-            model = whisper.load_model(f"{self.whisper_model_id}/large-v3-turbo.pt").to(self.device)
-            self.model_cache = model
-        else:
-            model = self.model_cache
+            self.model_cache = whisper.load_model(f"{whisper_model_id}/large-v3-turbo.pt").to(self.device)
 
         waveform, sample_rate = audio["waveform"], audio["sample_rate"]
         waveform = waveform.squeeze(0)
@@ -107,7 +105,7 @@ class WhisperTurboRun:
         if not timestamp:
             word_timestamps = False
         
-        result = model.transcribe(audio, 
+        result = self.model_cache.transcribe(audio, 
                                 # sample_len = sample_len,
                                 # hallucination_silence_threshold = hallucination_silence_threshold,
                                 logprob_threshold = logprob_threshold,
@@ -120,7 +118,6 @@ class WhisperTurboRun:
 
         if unload_model:
             import gc
-            del model
             self.model_cache = None
             gc.collect()
             torch.cuda.empty_cache()

@@ -31,6 +31,11 @@
 ```
 cd ComfyUI/custom_nodes
 git clone https://github.com/billwuhao/ComfyUI_EraX-WoW-Turbo.git
+cd ComfyUI_EraX-WoW-Turbo
+pip install -r requirements.txt
+
+# python_embeded
+./python_embeded/python.exe -m pip install -r requirements.txt
 ```
 
 ## 模型下载
