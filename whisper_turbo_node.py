@@ -8,6 +8,35 @@ import whisper
 models_dir = folder_paths.models_dir
 whisper_model_id = os.path.join(models_dir, "TTS", "whisper-large-v3-turbo")
 
+
+def convert_subtitle_format(data):
+  lines = []
+  for entry in data:
+    # We only need the start timestamp for this format
+    start_time_seconds = entry['timestamp'][0]
+    text = entry['text']
+
+    # Convert seconds to minutes, seconds, and milliseconds
+    # Work with total milliseconds to avoid floating point issues
+    total_milliseconds = int(start_time_seconds * 1000)
+
+    minutes = total_milliseconds // (1000 * 60)
+    remaining_milliseconds = total_milliseconds % (1000 * 60)
+    seconds = remaining_milliseconds // 1000
+    milliseconds = remaining_milliseconds % 1000
+
+    # Format the timestamp string as [MM:SS.mmm]
+    # Use f-string formatting with zero-padding
+    timestamp_str = f"[{minutes:02d}:{seconds:02d}.{milliseconds:03d}]"
+
+    # Combine timestamp and text
+    line = f"{timestamp_str}{text}"
+    lines.append(line)
+
+  # Join all lines with a newline character
+  return "\n".join(lines)
+
+
 class WhisperTurboRun:
     def __init__(self):
         self.model_cache = None
@@ -20,7 +49,7 @@ class WhisperTurboRun:
                 "max_num_words_per_page": ("INT", {"default": 24, "min": 1, "max": 50}),
                 # "sample_len": ("INT", {"default": 300, "min": 1, "step": 1}),
                 "logprob_threshold": ("FLOAT", {"default": -0.10, "min": -2.0, "max": -0.01, "step": 0.01}),
-                "no_speech_threshold": ("FLOAT", {"default": 0.03, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "no_speech_threshold": ("FLOAT", {"default": 0.1, "min": 0.0, "max": 1.0, "step": 0.01}),
                 # "task": (["transcribe", "translate"], {"default": "transcribe", "tooltip": "translate: → English."}), 
                 "initial_prompt": ("STRING", {"default": "如果有中文, 严格使用简体中文:", "multiline": True}),
                 "timestamp": ("BOOLEAN", {"default": False}),
@@ -30,8 +59,8 @@ class WhisperTurboRun:
             }
         }
 
-    RETURN_TYPES = ("STRING",)  
-    RETURN_NAMES = ("text",)  
+    RETURN_TYPES = ("STRING", "STRING")  
+    RETURN_NAMES = ("json_text", "subtitle_text")  
     FUNCTION = "process_audio"
     CATEGORY = "🎤MW/MW-EraXWoW"
 
@@ -136,7 +165,8 @@ class WhisperTurboRun:
                         "timestamp": (round(segment['start'], 2), round(segment['end'], 2)), 
                         "text": segment["text"]
                     })
-                return (str(timestamped_segments),)
+                return (str(timestamped_segments), convert_subtitle_format(timestamped_segments))
             else:
-                return (str(self.split_into_sentences(result["segments"], max_num_words_per_page)),)
+                data = self.split_into_sentences(result["segments"], max_num_words_per_page)
+                return (str(data), convert_subtitle_format(data))
 
