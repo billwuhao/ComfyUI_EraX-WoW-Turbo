@@ -36,6 +36,32 @@ def convert_subtitle_format(data):
   # Join all lines with a newline character
   return "\n".join(lines)
 
+import tempfile
+from typing import Optional
+import folder_paths
+cache_dir = folder_paths.get_temp_directory()
+def cache_audio_tensor(
+    cache_dir,
+    audio_tensor: torch.Tensor,
+    sample_rate: int,
+    filename_prefix: str = "cached_audio_",
+    audio_format: Optional[str] = ".wav"
+) -> str:
+    try:
+        with tempfile.NamedTemporaryFile(
+            prefix=filename_prefix,
+            suffix=audio_format,
+            dir=cache_dir,
+            delete=False 
+        ) as tmp_file:
+            temp_filepath = tmp_file.name
+        
+        torchaudio.save(temp_filepath, audio_tensor, sample_rate)
+
+        return temp_filepath
+    except Exception as e:
+        raise Exception(f"Error caching audio tensor: {e}")
+
 
 class WhisperTurboRun:
     def __init__(self):
@@ -118,18 +144,13 @@ class WhisperTurboRun:
         if self.model_cache is None:
             self.model_cache = whisper.load_model(f"{whisper_model_id}/large-v3-turbo.pt").to(self.device)
 
-        waveform, sample_rate = audio["waveform"], audio["sample_rate"]
-        waveform = waveform.squeeze(0)
-        waveform = waveform.to(self.device)
+        waveform, sample_rate = audio["waveform"].squeeze(0), audio["sample_rate"]
                 
-        if sample_rate != 16000:
-            resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000).to(self.device)
-            waveform = resampler(waveform)
+        # if sample_rate != 16000:
+        #     resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)
+        #     waveform = resampler(waveform)
                 
-        if len(waveform.shape) > 1:
-            waveform = torch.mean(waveform, dim=0)
-
-        audio = whisper.pad_or_trim(waveform.float()).to(self.device)
+        audio = cache_audio_tensor(cache_dir, waveform, sample_rate)
 
         if not timestamp:
             word_timestamps = False
