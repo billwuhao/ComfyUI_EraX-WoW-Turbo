@@ -23,10 +23,11 @@ LANGUAGES = {
 models_dir = folder_paths.models_dir
 model_id = os.path.join(models_dir, "TTS", "EraX-WoW-Turbo-V1.0")
 
+
+PROCESSOR = None
+CACHE_MODEL = None
 class EraXWoWRUN:
     def __init__(self):
-        self.processor = None
-        self.model_cache = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
     @classmethod
     def INPUT_TYPES(s):
@@ -44,14 +45,16 @@ class EraXWoWRUN:
     RETURN_NAMES = ("text",)
     FUNCTION = "transcribe"
     CATEGORY = "🎤MW/MW-EraXWoW"
+    
     def transcribe(self, audio, language, num_beams, max_length, unload_model):
-        if self.model_cache is None:
-            self.processor = WhisperProcessor.from_pretrained(model_id)
-            self.model_cache = WhisperForConditionalGeneration.from_pretrained(model_id)
-            self.model_cache.to(self.device).eval()
+        global PROCESSOR, CACHE_MODEL
+        if CACHE_MODEL is None:
+            PROCESSOR = WhisperProcessor.from_pretrained(model_id)
+            CACHE_MODEL = WhisperForConditionalGeneration.from_pretrained(model_id)
+            CACHE_MODEL.to(self.device).eval()
         
-        model = self.model_cache
-        processor = self.processor
+        model = CACHE_MODEL
+        processor = PROCESSOR
 
         waveform, sample_rate = audio["waveform"], audio["sample_rate"]
         waveform = waveform.squeeze(0)
@@ -86,8 +89,8 @@ class EraXWoWRUN:
             import gc
             del model
             del processor
-            self.processor = None
-            self.model_cache = None
+            PROCESSOR = None
+            CACHE_MODEL = None
             gc.collect()
             torch.cuda.empty_cache()
 

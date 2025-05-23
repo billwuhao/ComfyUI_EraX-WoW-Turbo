@@ -62,10 +62,9 @@ def cache_audio_tensor(
     except Exception as e:
         raise Exception(f"Error caching audio tensor: {e}")
 
-
+CACHE_MODEL = None
 class WhisperTurboRun:
     def __init__(self):
-        self.model_cache = None
         self.device = "cuda" if torch.cuda.is_available() else "cpu"
     @classmethod
     def INPUT_TYPES(cls):
@@ -140,22 +139,22 @@ class WhisperTurboRun:
                       unload_model=False, 
                       timestamp=False
                       ):
-        
-        if self.model_cache is None:
-            self.model_cache = whisper.load_model(f"{whisper_model_id}/large-v3-turbo.pt").to(self.device)
+        global CACHE_MODEL
+        if CACHE_MODEL is None:
+            CACHE_MODEL = whisper.load_model(f"{whisper_model_id}/large-v3-turbo.pt").to(self.device)
 
         waveform, sample_rate = audio["waveform"].squeeze(0), audio["sample_rate"]
                 
-        # if sample_rate != 16000:
-        #     resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)
-        #     waveform = resampler(waveform)
+        if sample_rate != 16000:
+            resampler = torchaudio.transforms.Resample(orig_freq=sample_rate, new_freq=16000)
+            waveform = resampler(waveform)
                 
         audio = cache_audio_tensor(cache_dir, waveform, sample_rate)
 
         if not timestamp:
             word_timestamps = False
         
-        result = self.model_cache.transcribe(audio, 
+        result = CACHE_MODEL.transcribe(audio, 
                                 # sample_len = sample_len,
                                 # hallucination_silence_threshold = hallucination_silence_threshold,
                                 logprob_threshold = logprob_threshold,
@@ -168,7 +167,7 @@ class WhisperTurboRun:
 
         if unload_model:
             import gc
-            self.model_cache = None
+            CACHE_MODEL = None
             gc.collect()
             torch.cuda.empty_cache()
 
